@@ -4,6 +4,7 @@ import joblib
 import numpy as np
 from pathlib import Path
 import traceback
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -92,4 +93,5 @@ def predict():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
