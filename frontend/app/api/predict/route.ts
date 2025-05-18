@@ -9,6 +9,18 @@ const FLASK_API_URL = process.env.BACKEND_API_URL
 // Increase timeout to 60 seconds to accommodate slower model loading
 const TIMEOUT_MS = 600000;
 
+// Add model type normalization mapping
+const MODEL_TYPE_MAP: Record<string, string> = {
+  'linear-regression': 'linear',
+  'ridge-regression': 'ridge',
+  'lasso-regression': 'lasso',
+  'bayesian-ridge': 'bayesian',
+  'random-forest': 'rf',
+  'gradient-boosting': 'gb',
+  'xgboost': 'xgb',
+  'elasticnet': 'elasticnet' // This one stays the same
+};
+
 export async function POST(request: NextRequest): Promise<Response> {
   if (!FLASK_API_URL) {
     return new Response(
@@ -23,24 +35,33 @@ export async function POST(request: NextRequest): Promise<Response> {
     console.log("Sending request to Flask API:", FLASK_API_URL);
     console.log("Request body:", JSON.stringify(body));
 
-    // Extract model type for conditional timeout
-    const modelType = body.modelType || "linear-regression";
+    // Extract and normalize model type
+    const modelTypeRaw = body.modelType || "linear-regression";
+    const normalizedModelType = MODEL_TYPE_MAP[modelTypeRaw] || modelTypeRaw;
+    
+    // Update the body with the normalized model type
+    const modifiedBody = {
+      ...body,
+      modelType: normalizedModelType
+    };
+    
+    console.log("Normalized model type:", normalizedModelType);
     
     // Determine appropriate timeout based on model complexity
     // More complex models get longer timeouts
     let timeoutValue = TIMEOUT_MS;
-    if (["random-forest", "gradient-boosting", "xgboost"].includes(modelType)) {
+    if (["rf", "gb", "xgb", "random-forest", "gradient-boosting", "xgboost"].includes(modelTypeRaw)) {
       timeoutValue = 90000; // 90 seconds for complex models
     }
 
-    console.log(`Using timeout of ${timeoutValue}ms for model: ${modelType}`);
+    console.log(`Using timeout of ${timeoutValue}ms for model: ${normalizedModelType}`);
 
     const response = await fetch(FLASK_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(modifiedBody),
       // Use the conditionally set timeout
       signal: AbortSignal.timeout(timeoutValue),
     });
