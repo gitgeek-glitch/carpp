@@ -125,12 +125,16 @@ def preprocess_data(data):
                     processed_data[col] = -1
 
         for col in feature_columns:
-            if col in data:
+            if col in data and col not in categorical_columns:
                 processed_data[col] = float(data[col])
 
         feature_array = [processed_data[col] for col in feature_columns]
         scaled_data = scaler.transform([feature_array])
-        return pca.transform(scaled_data)
+        
+        # Apply PCA transformation if available
+        if pca is not None:
+            return pca.transform(scaled_data)
+        return scaled_data
     except Exception as e:
         raise ValueError(f"Preprocessing error: {e}")
 
@@ -158,17 +162,29 @@ def predict():
                 'error': f'Invalid modelType: "{model_type_raw}". Allowed values: {sorted(list(MODEL_NAME_MAP.keys())) + sorted(list(ALLOWED_MODEL_TYPES))}'
             }), 400
 
-        # Load model and make prediction
+        # Process input data
         try:
-            model = get_model(model_type)
             processed = preprocess_data(data)
+            
+            # Get the model
+            model = get_model(model_type)
+            
+            # Check if the object is actually a machine learning model with predict method
+            if not hasattr(model, 'predict'):
+                return jsonify({'error': f'Model "{model_type}" does not have a predict method. Check the model file.'}), 500
+                
+            # Make prediction
             prediction = model.predict(processed)
             return jsonify({'prediction': float(prediction[0])})
+            
         except Exception as e:
-            # Check if this is the PCA error specifically
-            if "PCA" in str(e) and "predict" in str(e):
+            print(f"Prediction error: {e}")
+            traceback.print_exc()
+            
+            # Fall back to direct prediction without PCA
+            if "PCA" in str(e):
                 print("PCA error occurred. Attempting direct model prediction without PCA...")
-                # Try again without PCA transformation
+                # Process data without PCA
                 processed_data = {col: 0 for col in feature_columns}
                 
                 for col in categorical_columns:
@@ -179,11 +195,16 @@ def predict():
                             processed_data[col] = -1
                 
                 for col in feature_columns:
-                    if col in data:
+                    if col in data and col not in categorical_columns:
                         processed_data[col] = float(data[col])
                 
                 feature_array = [processed_data[col] for col in feature_columns]
                 scaled_data = scaler.transform([feature_array])
+                
+                model = get_model(model_type)
+                if not hasattr(model, 'predict'):
+                    return jsonify({'error': f'Model "{model_type}" does not have a predict method.'}), 500
+                    
                 prediction = model.predict(scaled_data)
                 return jsonify({'prediction': float(prediction[0])})
             else:
