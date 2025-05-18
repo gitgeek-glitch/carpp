@@ -31,6 +31,30 @@ MODEL_FILES = {
     'xgboost.joblib': os.environ.get('XGBOOST_URL', '')
 }
 
+# Supported model types
+ALLOWED_MODEL_TYPES = {
+    'linear_regression',
+    'ridge_regression',
+    'elasticnet',
+    'lasso_regression',
+    'bayesian_ridge',
+    'random_forest',
+    'gradient_boosting',
+    'xgboost'
+}
+
+# Optional: Friendly model name mapping
+MODEL_NAME_MAP = {
+    'linear': 'linear_regression',
+    'ridge': 'ridge_regression',
+    'elasticnet': 'elasticnet',
+    'lasso': 'lasso_regression',
+    'bayesian': 'bayesian_ridge',
+    'rf': 'random_forest',
+    'gb': 'gradient_boosting',
+    'xgb': 'xgboost'
+}
+
 # Globals
 scaler = None
 pca = None
@@ -121,10 +145,18 @@ def health_check():
 def predict():
     try:
         data = request.json
-        model_type = data.pop('modelType', None)
+        model_type_raw = data.pop('modelType', None)
 
-        if not model_type:
+        if not model_type_raw:
             return jsonify({'error': 'Missing "modelType" field.'}), 400
+
+        # Convert to internal model name
+        model_type = MODEL_NAME_MAP.get(model_type_raw, model_type_raw)
+
+        if model_type not in ALLOWED_MODEL_TYPES:
+            return jsonify({
+                'error': f'Invalid modelType: "{model_type_raw}". Allowed values: {sorted(list(MODEL_NAME_MAP.keys())) + sorted(list(ALLOWED_MODEL_TYPES))}'
+            }), 400
 
         model = get_model(model_type)
         processed = preprocess_data(data)
@@ -136,7 +168,7 @@ def predict():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# Initialize light components on import
+# Initialize preprocessing components on startup
 load_common_components()
 
 if __name__ == '__main__':
