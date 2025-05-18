@@ -1,37 +1,18 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { models } from "@/lib/utils";
-import { Loader2, HomeIcon, Code, TrendingUp } from "lucide-react";
-import { FloatingDock } from "@/components/ui/floating-dock";
+import { useState } from "react"
+import { useParams } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { models } from "@/lib/utils"
+import { Loader2, HomeIcon, Code, TrendingUp } from "lucide-react"
+import { FloatingDock } from "@/components/ui/floating-dock"
 
 const dockItems = [
   {
@@ -49,7 +30,7 @@ const dockItems = [
     icon: <TrendingUp className="h-6 w-6" />,
     href: "/performance",
   },
-];
+]
 
 const formSchema = z.object({
   model: z.string(),
@@ -61,17 +42,17 @@ const formSchema = z.object({
   tax: z.string(),
   mpg: z.string(),
   engineSize: z.string(),
-});
+})
 
 export default function PredictPage() {
-  const params = useParams();
-  const modelParam = Array.isArray(params.model) ? params.model[0] : params.model;
+  const params = useParams()
+  const modelParam = Array.isArray(params.model) ? params.model[0] : params.model
 
-  const [prediction, setPrediction] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState<string | null>(null);
+  const [prediction, setPrediction] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [currentStep, setCurrentStep] = useState<string | null>(null)
 
-  const currentModel = models.find((m) => m.id === modelParam) || models[0];
+  const currentModel = models.find((m) => m.id === modelParam) || models[0]
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,23 +67,30 @@ export default function PredictPage() {
       mpg: "",
       engineSize: "",
     },
-  });
+  })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setLoading(true);
-    setCurrentStep("Converting input into dataframe...");
+    setLoading(true)
+    setPrediction(null)
 
-    await new Promise((r) => setTimeout(r, 3000));
-    setCurrentStep("Performing label encoding...");
+    // Simulate steps with a more reliable approach
+    const steps = [
+      "Converting input into dataframe...",
+      "Performing label encoding...",
+      "Performing feature scaling...",
+      "Reducing dimensionality...",
+      "Predicting price...",
+    ]
 
-    await new Promise((r) => setTimeout(r, 3000));
-    setCurrentStep("Performing feature scaling...");
-
-    await new Promise((r) => setTimeout(r, 3000));
-    setCurrentStep("Reducing dimensionality...");
-
-    await new Promise((r) => setTimeout(r, 3000));
-    setCurrentStep("Predicting price...");
+    let stepIndex = 0
+    const stepInterval = setInterval(() => {
+      if (stepIndex < steps.length) {
+        setCurrentStep(steps[stepIndex])
+        stepIndex++
+      } else {
+        clearInterval(stepInterval)
+      }
+    }, 1000)
 
     try {
       const response = await fetch("/api/predict", {
@@ -112,31 +100,29 @@ export default function PredictPage() {
           ...values,
           modelType: modelParam,
         }),
-      });
+      })
 
-      if (!response.ok) {
-        throw new Error("Prediction failed");
+      const data = await response.json()
+
+      if (!response.ok || data.error) {
+        throw new Error(data.details || data.error || "Prediction failed")
       }
 
-      const data = await response.json();
-      setPrediction(data.prediction);
+      setPrediction(data.prediction)
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error:", error)
     } finally {
-      setLoading(false);
-      setCurrentStep(null);
+      clearInterval(stepInterval)
+      setLoading(false)
+      setCurrentStep(null)
     }
   }
 
   function formatIndianCurrency(value: number): string {
-    const number = Math.floor(value).toString();
-    const lastThree = number.slice(-3);
-    const otherNumbers = number.slice(0, -3);
-    return (
-      otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") +
-      (otherNumbers ? "," : "") +
-      lastThree
-    );
+    const number = Math.floor(value).toString()
+    const lastThree = number.slice(-3)
+    const otherNumbers = number.slice(0, -3)
+    return otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + (otherNumbers ? "," : "") + lastThree
   }
 
   return (
@@ -155,6 +141,7 @@ export default function PredictPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
@@ -201,10 +188,7 @@ export default function PredictPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{label}</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger className="bg-background">
                               <SelectValue placeholder={`Select ${String(label).toLowerCase()}`} />
@@ -245,9 +229,7 @@ export default function PredictPage() {
           {prediction !== null && (
             <div className="mt-6 p-6 bg-primary/5 rounded-lg border border-primary/20 max-w-lg mx-auto">
               <h3 className="text-lg font-semibold mb-2 text-center">Predicted Price</h3>
-              <p className="text-4xl font-bold text-primary text-center">
-                £ {Math.floor(prediction).toLocaleString()}
-              </p>
+              <p className="text-4xl font-bold text-primary text-center">£ {Math.floor(prediction).toLocaleString()}</p>
               <p className="text-center">OR</p>
               <p className="text-4xl font-bold text-primary text-center">
                 ₹ {formatIndianCurrency(prediction * 106.55)}
@@ -257,6 +239,5 @@ export default function PredictPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
-
