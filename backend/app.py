@@ -2,35 +2,96 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
 import numpy as np
-from pathlib import Path
-import traceback
+import requests
+from io import BytesIO
 import os
+import traceback
+from pathlib import Path
 
 app = Flask(__name__)
 CORS(app)
 
-# Directory where model files are stored
+# Create models directory if it doesn't exist
 MODELS_DIR = Path(__file__).parent / 'models'
+MODELS_DIR.mkdir(exist_ok=True)
 
-# Load preprocessing components
-scaler = joblib.load(MODELS_DIR / 'scaler.joblib')
-pca = joblib.load(MODELS_DIR / 'pca.joblib')
-label_encoder = joblib.load(MODELS_DIR / 'label_encoder.joblib')
-categorical_columns = joblib.load(MODELS_DIR / 'categorical_columns.joblib')
-feature_columns = joblib.load(MODELS_DIR / 'feature_columns.joblib')
-
-# Load all models
-models = {
-    'linear-regression': joblib.load(MODELS_DIR / 'linear_regression.joblib'),
-    'ridge-regression': joblib.load(MODELS_DIR / 'ridge_regression.joblib'),
-    'elastic-net': joblib.load(MODELS_DIR / 'elasticnet.joblib'),
-    'lasso-regression': joblib.load(MODELS_DIR / 'lasso_regression.joblib'),
-    'bayesian-ridge': joblib.load(MODELS_DIR / 'bayesian_ridge.joblib'),
-    'random-forest': joblib.load(MODELS_DIR / 'random_forest.joblib'),
-    'gradient-boosting': joblib.load(MODELS_DIR / 'gradient_boosting.joblib'),
-    'xgboost': joblib.load(MODELS_DIR / 'xgboost.joblib'),
+# Model files and their URLs
+MODEL_FILES = {
+    'scaler.joblib': os.environ.get('SCALER_URL', ''),
+    'pca.joblib': os.environ.get('PCA_URL', ''),
+    'label_encoder.joblib': os.environ.get('LABEL_ENCODER_URL', ''),
+    'categorical_columns.joblib': os.environ.get('CATEGORICAL_COLUMNS_URL', ''),
+    'feature_columns.joblib': os.environ.get('FEATURE_COLUMNS_URL', ''),
+    'linear_regression.joblib': os.environ.get('LINEAR_REGRESSION_URL', ''),
+    'ridge_regression.joblib': os.environ.get('RIDGE_REGRESSION_URL', ''),
+    'elasticnet.joblib': os.environ.get('ELASTICNET_URL', ''),
+    'lasso_regression.joblib': os.environ.get('LASSO_REGRESSION_URL', ''),
+    'bayesian_ridge.joblib': os.environ.get('BAYESIAN_RIDGE_URL', ''),
+    'random_forest.joblib': os.environ.get('RANDOM_FOREST_URL', ''),
+    'gradient_boosting.joblib': os.environ.get('GRADIENT_BOOSTING_URL', ''),
+    'xgboost.joblib': os.environ.get('XGBOOST_URL', '')
 }
 
+# Global variables to store loaded models and components
+scaler = None
+pca = None
+label_encoder = None
+categorical_columns = None
+feature_columns = None
+models = {}
+
+def download_and_load_models():
+    global scaler, pca, label_encoder, categorical_columns, feature_columns, models
+    
+    for filename, url in MODEL_FILES.items():
+        if not url:
+            print(f"Warning: URL for {filename} is not set. Skipping.")
+            continue
+            
+        local_path = MODELS_DIR / filename
+        
+        # Download if file doesn't exist locally
+        if not local_path.exists():
+            try:
+                print(f"Downloading {filename} from {url}")
+                response = requests.get(url)
+                response.raise_for_status()
+                
+                with open(local_path, 'wb') as f:
+                    f.write(response.content)
+                print(f"Successfully downloaded {filename}")
+            except Exception as e:
+                print(f"Error downloading {filename}: {e}")
+                continue
+        
+        # Load the model
+        try:
+            model = joblib.load(local_path)
+            
+            # Assign to appropriate variable
+            if filename == 'scaler.joblib':
+                scaler = model
+            elif filename == 'pca.joblib':
+                pca = model
+            elif filename == 'label_encoder.joblib':
+                label_encoder = model
+            elif filename == 'categorical_columns.joblib':
+                categorical_columns = model
+            elif filename == 'feature_columns.joblib':
+                feature_columns = model
+            else:
+                # It's one of the prediction models
+                model_name = filename.replace('.joblib', '').replace('_', '-')
+                models[model_name] = model
+                
+            print(f"Successfully loaded {filename}")
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")
+
+# Download models at startup
+@app.before_first_request
+def initialize():
+    download_and_load_models()
 
 def preprocess_data(data):
     try:
@@ -66,17 +127,26 @@ def preprocess_data(data):
     except Exception as e:
         raise ValueError(f"Error in preprocessing data: {e}")
 
+@app.route('/', methods=['GET'])
+def health_check():
+    return jsonify({"status": "API is running", "models_loaded": list(models.keys())})
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        # Ensure models are loaded
+        if not models:
+            download_and_load_models()
+            if not models:
+                return jsonify({'error': 'Models not loaded yet. Please try again in a few moments.'}), 503
+        
         data = request.json
         print(f"Received data: {data}")
 
         # Extract and validate model type
         model_type = data.pop('modelType', None)
         if not model_type or model_type not in models:
-            return jsonify({'error': 'Invalid or missing model type'}), 400
+            return jsonify({'error': f'Invalid or missing model type. Available models: {list(models.keys())}'}), 400
 
         # Preprocess the input data
         processed_data = preprocess_data(data)
@@ -90,7 +160,6 @@ def predict():
         print(f"Error in prediction: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
-
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
