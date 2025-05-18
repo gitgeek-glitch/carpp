@@ -53,7 +53,7 @@ export default function Home() {
                   <span className="text-primary ml-2">Precision</span>
                 </h1>
                 <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  Leverage the power of 5 simple and 3 ensemble machine learning
+                  Leverage the power of 5 simple and 2 ensemble machine learning
                   models to get accurate car price predictions. Make informed
                   decisions with data-driven insights.
                 </p>
@@ -82,10 +82,10 @@ export default function Home() {
                   <div className="inline-block rounded-lg bg-primary/10 p-3">
                     <Sparkles className="h-6 w-6 text-primary" />
                   </div>
-                  <h3 className="text-2xl font-bold">8 Different Models</h3>
+                  <h3 className="text-2xl font-bold">7 Different Models</h3>
                   <p className="text-muted-foreground">
                     Choose from various ML models including Linear Regression,
-                    Random Forest, and XGBoost
+                    Decision Trees, and XGBoost
                   </p>
                 </div>
               </div>

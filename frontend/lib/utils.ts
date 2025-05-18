@@ -58,16 +58,16 @@ export const models = [
     },
     icon: "Network",
   },
-  {
-    id: "random-forest",
-    name: "Random Forest",
-    description: "Ensemble learning using multiple decision trees",
-    metrics: {
-      r2: 0.96,
-      rmse: 1933.86,
-    },
-    icon: "Trees",
-  },
+  // {
+  //   id: "random-forest",
+  //   name: "Random Forest",
+  //   description: "Ensemble learning using multiple decision trees",
+  //   metrics: {
+  //     r2: 0.96,
+  //     rmse: 1933.86,
+  //   },
+  //   icon: "Trees",
+  // },
   {
     id: "gradient-boosting",
     name: "Gradient Boosting",
