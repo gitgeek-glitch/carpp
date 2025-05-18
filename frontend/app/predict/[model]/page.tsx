@@ -30,8 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { models } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
-import { HomeIcon, Code, TrendingUp } from "lucide-react";
+import { Loader2, HomeIcon, Code, TrendingUp } from "lucide-react";
 import { FloatingDock } from "@/components/ui/floating-dock";
 
 const dockItems = [
@@ -66,11 +65,13 @@ const formSchema = z.object({
 
 export default function PredictPage() {
   const params = useParams();
+  const modelParam = Array.isArray(params.model) ? params.model[0] : params.model;
+
   const [prediction, setPrediction] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
 
-  const currentModel = models.find((m) => m.id === params.model) || models[0];
+  const currentModel = models.find((m) => m.id === modelParam) || models[0];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -91,32 +92,30 @@ export default function PredictPage() {
     setLoading(true);
     setCurrentStep("Converting input into dataframe...");
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((r) => setTimeout(r, 3000));
     setCurrentStep("Performing label encoding...");
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((r) => setTimeout(r, 3000));
     setCurrentStep("Performing feature scaling...");
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((r) => setTimeout(r, 3000));
     setCurrentStep("Reducing dimensionality...");
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((r) => setTimeout(r, 3000));
     setCurrentStep("Predicting price...");
 
     try {
       const response = await fetch("/api/predict", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...values,
-          modelType: params.model, // Send selected model type
+          modelType: modelParam,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch prediction");
+        throw new Error("Prediction failed");
       }
 
       const data = await response.json();
@@ -151,183 +150,79 @@ export default function PredictPage() {
             <span>Price Prediction with {currentModel.name}</span>
           </CardTitle>
           <CardDescription>
-            This model has an R² score of {currentModel.metrics.r2.toFixed(2)}{" "}
-            and RMSE of {currentModel.metrics.rmse.toFixed(2)}
+            This model has an R² score of {currentModel.metrics.r2.toFixed(2)} and RMSE of{" "}
+            {currentModel.metrics.rmse.toFixed(2)}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="model"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Car Model</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Kuga"
-                          {...field}
-                          className="bg-background"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="transmission"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Transmission</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                {[
+                  { name: "model", label: "Car Model", placeholder: "e.g., Kuga" },
+                  { name: "make", label: "Make", placeholder: "e.g., Ford" },
+                  { name: "year", label: "Year", placeholder: "e.g., 2020" },
+                  { name: "mileage", label: "Mileage", placeholder: "e.g., 50000" },
+                  { name: "tax", label: "Tax", placeholder: "e.g., 150" },
+                  { name: "mpg", label: "MPG", placeholder: "e.g., 55.4" },
+                  { name: "engineSize", label: "Engine Size", placeholder: "e.g., 2.0" },
+                ].map(({ name, label, placeholder }) => (
+                  <FormField
+                    key={String(name)}
+                    control={form.control}
+                    name={name as keyof z.infer<typeof formSchema>}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{label}</FormLabel>
                         <FormControl>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Select transmission" />
-                          </SelectTrigger>
+                          <Input placeholder={placeholder} {...field} className="bg-background" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="manual">Manual</SelectItem>
-                          <SelectItem value="automatic">Automatic</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="fuelType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fuel Type</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Select fuel type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="petrol">Petrol</SelectItem>
-                          <SelectItem value="diesel">Diesel</SelectItem>
-                          <SelectItem value="hybrid">Hybrid</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="make"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Make</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Ford"
-                          {...field}
-                          className="bg-background"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="year"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Year</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 2020"
-                          {...field}
-                          className="bg-background"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="mileage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mileage</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 50000"
-                          {...field}
-                          className="bg-background"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="tax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tax</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 150"
-                          {...field}
-                          className="bg-background"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="mpg"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>MPG</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 55.4"
-                          {...field}
-                          className="bg-background"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="engineSize"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Engine Size</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 2.0"
-                          {...field}
-                          className="bg-background"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+                {[
+                  {
+                    name: "transmission",
+                    label: "Transmission",
+                    options: ["manual", "automatic"],
+                  },
+                  {
+                    name: "fuelType",
+                    label: "Fuel Type",
+                    options: ["petrol", "diesel", "hybrid", "other"],
+                  },
+                ].map(({ name, label, options }) => (
+                  <FormField
+                    key={String(name)}
+                    control={form.control}
+                    name={name as keyof z.infer<typeof formSchema>}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{label}</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder={`Select ${String(label).toLowerCase()}`} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {(options as string[]).map((opt: string) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt[0].toUpperCase() + opt.slice(1)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
@@ -343,17 +238,13 @@ export default function PredictPage() {
           </Form>
           {currentStep && (
             <div className="mt-6 p-6 bg-primary/5 rounded-lg border border-primary/20 max-w-lg mx-auto">
-              <h3 className="text-lg font-semibold mb-2 text-center">
-                Current Step
-              </h3>
+              <h3 className="text-lg font-semibold mb-2 text-center">Current Step</h3>
               <p className="text-center">{currentStep}</p>
             </div>
           )}
           {prediction !== null && (
             <div className="mt-6 p-6 bg-primary/5 rounded-lg border border-primary/20 max-w-lg mx-auto">
-              <h3 className="text-lg font-semibold mb-2 text-center">
-                Predicted Price
-              </h3>
+              <h3 className="text-lg font-semibold mb-2 text-center">Predicted Price</h3>
               <p className="text-4xl font-bold text-primary text-center">
                 £ {Math.floor(prediction).toLocaleString()}
               </p>
