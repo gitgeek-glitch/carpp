@@ -89,9 +89,7 @@ def download_and_load_models():
             print(f"Error loading {filename}: {e}")
 
 # Download models at startup
-@app.before_serving
-def initialize():
-    download_and_load_models()
+download_and_load_models()
 
 def preprocess_data(data):
     try:
