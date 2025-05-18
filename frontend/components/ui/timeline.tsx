@@ -61,9 +61,7 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
           <h2 className="text-lg md:text-4xl font-semibold text-neutral-700 dark:text-neutral-400 max-w-4xl mx-auto">
             MODEL&apos;S CODE
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-2">
-            Last updated: <span className="font-medium">January 5, 2025</span>
-          </p>
+          
         </div>
         <p className="text-neutral-700 dark:text-neutral-300 text-sm md:text-base max-w-sm"></p>
       </div>
