@@ -10,11 +10,11 @@ from pathlib import Path
 app = Flask(__name__)
 CORS(app)
 
-# Create models directory if it doesn't exist
+# Create models directory
 MODELS_DIR = Path(__file__).parent / 'models'
 MODELS_DIR.mkdir(exist_ok=True)
 
-# Model files and their Google Drive URLs
+# Model URLs from environment
 MODEL_FILES = {
     'scaler.joblib': os.environ.get('SCALER_URL', ''),
     'pca.joblib': os.environ.get('PCA_URL', ''),
@@ -31,136 +31,113 @@ MODEL_FILES = {
     'xgboost.joblib': os.environ.get('XGBOOST_URL', '')
 }
 
-# Global variables to store loaded models and components
+# Globals
 scaler = None
 pca = None
 label_encoder = None
 categorical_columns = None
 feature_columns = None
-models = {}
+model_cache = {}
 
 def extract_drive_id(url):
-    parts = url.split('/')
     try:
-        return parts[5]
+        return url.split('/')[5]
     except IndexError:
         return None
 
-def download_and_load_models():
-    global scaler, pca, label_encoder, categorical_columns, feature_columns, models
-
-    for filename, url in MODEL_FILES.items():
-        if not url:
-            print(f"Warning: URL for {filename} is not set. Skipping.")
-            continue
-
-        local_path = MODELS_DIR / filename
-
-        if not local_path.exists():
-            try:
-                drive_id = extract_drive_id(url)
-                if not drive_id:
-                    print(f"Invalid Google Drive URL for {filename}")
-                    continue
-
-                print(f"Downloading {filename} from {url}")
-                gdown.download(f"https://drive.google.com/uc?id={drive_id}", str(local_path), quiet=False)
-                print(f"Successfully downloaded {filename}")
-            except Exception as e:
-                print(f"Error downloading {filename}: {e}")
-                continue
-
+def download_if_needed(filename, url):
+    local_path = MODELS_DIR / filename
+    if not local_path.exists():
         try:
-            model = joblib.load(local_path)
-
-            if filename == 'scaler.joblib':
-                scaler = model
-            elif filename == 'pca.joblib':
-                pca = model
-            elif filename == 'label_encoder.joblib':
-                label_encoder = model
-            elif filename == 'categorical_columns.joblib':
-                categorical_columns = model
-            elif filename == 'feature_columns.joblib':
-                feature_columns = model
-            else:
-                model_name = filename.replace('.joblib', '').replace('_', '-')
-                models[model_name] = model
-
-            print(f"Successfully loaded {filename}")
+            print(f"Downloading {filename} from {url}")
+            file_id = extract_drive_id(url)
+            gdown.download(f"https://drive.google.com/uc?id={file_id}", str(local_path), quiet=False)
+            print(f"Downloaded {filename}")
         except Exception as e:
-            print(f"Error loading {filename}: {e}")
+            print(f"Error downloading {filename}: {e}")
+            raise
+    return local_path
 
-# Download models at startup
-download_and_load_models()
+def load_common_components():
+    global scaler, pca, label_encoder, categorical_columns, feature_columns
+
+    try:
+        scaler = joblib.load(download_if_needed('scaler.joblib', MODEL_FILES['scaler.joblib']))
+        pca = joblib.load(download_if_needed('pca.joblib', MODEL_FILES['pca.joblib']))
+        label_encoder = joblib.load(download_if_needed('label_encoder.joblib', MODEL_FILES['label_encoder.joblib']))
+        categorical_columns = joblib.load(download_if_needed('categorical_columns.joblib', MODEL_FILES['categorical_columns.joblib']))
+        feature_columns = joblib.load(download_if_needed('feature_columns.joblib', MODEL_FILES['feature_columns.joblib']))
+        print("Loaded common preprocessing components.")
+    except Exception as e:
+        print("Error loading core components:", e)
+
+def get_model(model_type):
+    """Lazy load the model from disk or cache"""
+    if model_type in model_cache:
+        return model_cache[model_type]
+
+    filename = model_type.replace('-', '_') + '.joblib'
+    url = MODEL_FILES.get(filename)
+    if not url:
+        raise ValueError(f"No URL configured for model type '{model_type}'")
+
+    try:
+        model_path = download_if_needed(filename, url)
+        model = joblib.load(model_path)
+        model_cache[model_type] = model  # Cache it
+        return model
+    except Exception as e:
+        raise RuntimeError(f"Failed to load model '{model_type}': {e}")
 
 def preprocess_data(data):
     try:
-        # Initialize a feature vector with all required columns set to default (numerical: 0, categorical: -1)
         processed_data = {col: 0 for col in feature_columns}
-        
-        # Handle categorical features
+
         for col in categorical_columns:
             if col in data:
                 try:
-                    # Transform using label encoder
                     processed_data[col] = label_encoder.transform([data[col]])[0]
                 except ValueError:
-                    # Assign -1 for unseen labels
-                    print(f"Unseen label encountered: {data[col]} for column {col}")
                     processed_data[col] = -1
 
-        # Handle numerical features
         for col in feature_columns:
             if col in data:
                 processed_data[col] = float(data[col])
 
-        # Create a list in the order of feature_columns
         feature_array = [processed_data[col] for col in feature_columns]
-
-        # Scale the features
         scaled_data = scaler.transform([feature_array])
-
-        # Apply PCA transformation
-        pca_data = pca.transform(scaled_data)
-
-        return pca_data
+        return pca.transform(scaled_data)
     except Exception as e:
-        raise ValueError(f"Error in preprocessing data: {e}")
+        raise ValueError(f"Preprocessing error: {e}")
 
 @app.route('/', methods=['GET'])
 def health_check():
-    return jsonify({"status": "API is running", "models_loaded": list(models.keys())})
+    return jsonify({
+        "status": "API is running",
+        "models_cached": list(model_cache.keys())
+    })
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Ensure models are loaded
-        if not models:
-            download_and_load_models()
-            if not models:
-                return jsonify({'error': 'Models not loaded yet. Please try again in a few moments.'}), 503
-        
         data = request.json
-        print(f"Received data: {data}")
-
-        # Extract and validate model type
         model_type = data.pop('modelType', None)
-        if not model_type or model_type not in models:
-            return jsonify({'error': f'Invalid or missing model type. Available models: {list(models.keys())}'}), 400
 
-        # Preprocess the input data
-        processed_data = preprocess_data(data)
+        if not model_type:
+            return jsonify({'error': 'Missing "modelType" field.'}), 400
 
-        # Select and use the appropriate model
-        model = models[model_type]
-        prediction = model.predict(processed_data)
+        model = get_model(model_type)
+        processed = preprocess_data(data)
+        prediction = model.predict(processed)
 
         return jsonify({'prediction': float(prediction[0])})
     except Exception as e:
-        print(f"Error in prediction: {e}")
+        print("Prediction error:", e)
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+# Initialize light components on import
+load_common_components()
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
