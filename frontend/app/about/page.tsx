@@ -106,15 +106,6 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold">Our Team</h2>
-                <p className="text-muted-foreground">
-                  CarPricer was developed by a team of passionate data scientists and 
-                  software engineers with extensive experience in the automotive industry 
-                  and machine learning. We&apos;re committed to continuous improvement and regularly 
-                  update our models to maintain high accuracy.
-                </p>
-              </div>
 
               <div className="pt-6">
                 <Link href="/models">
