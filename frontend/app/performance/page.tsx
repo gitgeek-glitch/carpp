@@ -1,26 +1,31 @@
 import { FloatingDock } from "@/components/ui/floating-dock";
-import { Car, ArrowRight, Sparkles, HomeIcon, Code, Table, TrendingUp } from "lucide-react";
+import { HomeIcon, Code, TrendingUp } from "lucide-react";
+import Image from "next/image";
 
 export default function PerformancePage() {
   const performanceData = [
     {
       caption: "Model Accuracy",
-      description: "Learn how accurate the models are in predicting car prices.",
+      description:
+        "Learn how accurate the models are in predicting car prices.",
       imageUrl: "/assets/performace/1.jpg",
     },
     {
       caption: "Model Efficiency",
-      description: "Understand the performance metrics related to model efficiency.",
+      description:
+        "Understand the performance metrics related to model efficiency.",
       imageUrl: "/assets/performace/2.jpg",
     },
     {
       caption: "Model Efficiency",
-      description: "Understand the performance metrics related to model efficiency.",
+      description:
+        "Understand the performance metrics related to model efficiency.",
       imageUrl: "/assets/performace/3.jpg",
     },
     {
       caption: "Model Efficiency",
-      description: "Understand the performance metrics related to model efficiency.",
+      description:
+        "Understand the performance metrics related to model efficiency.",
       imageUrl: "/assets/performace/4.jpg",
     },
   ];
@@ -46,7 +51,6 @@ export default function PerformancePage() {
   return (
     <div className="min-h-screen bg-black text-neon-green font-sans flex items-center justify-center">
       <div className="w-full max-w-4xl text-center">
-
         <div className="absolute top-5 right-5 transform translate-x-0 z-50">
           <FloatingDock items={dockItems} />
         </div>
@@ -68,13 +72,17 @@ export default function PerformancePage() {
                 className="flex flex-col items-center justify-center text-center space-y-4"
               >
                 <div className="space-y-2">
-                  <h2 className="text-2xl font-semibold text-neon-green">{item.caption}</h2>
-                  <p className="text-lg text-muted-foreground">{item.description}</p>
+                  <h2 className="text-2xl font-semibold text-neon-green">
+                    {item.caption}
+                  </h2>
+                  <p className="text-lg text-muted-foreground">
+                    {item.description}
+                  </p>
                 </div>
 
                 {/* Image Section */}
                 <div className="relative">
-                  <img
+                  <Image
                     src={item.imageUrl} // Image directly from public folder
                     alt={item.caption}
                     width={600}

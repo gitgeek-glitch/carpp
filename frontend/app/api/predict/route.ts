@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
-
 // Update the Flask API URL to the deployed backend URL
-const FLASK_API_URL = 'http://localhost:5000/predict'; // Flask API URL
+const FLASK_API_URL = process.env.BACKEND_API_URL + "/predict";
+ // Flask API URL
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +29,7 @@ export async function POST(request: Request) {
     console.error("Prediction error:", error);
     return new Response(
       JSON.stringify({ error: "Failed to fetch prediction" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

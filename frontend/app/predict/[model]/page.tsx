@@ -1,37 +1,56 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useParams } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { models } from "@/lib/utils"
-import { Loader2 } from 'lucide-react'
-import { Car, ArrowRight, Sparkles, HomeIcon, Code, Table, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { models } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+import { HomeIcon, Code, TrendingUp } from "lucide-react";
 import { FloatingDock } from "@/components/ui/floating-dock";
 
-  const dockItems = [
-    {
-      title: "Home",
-      icon: <HomeIcon className="h-6 w-6" />,
-      href: "/",
-    },
-    {
-      title: "Code",
-      icon: <Code className="h-6 w-6" />,
-      href: "/code",
-    },
-    {
-      title: "Performance Measure",
-      icon: <TrendingUp className="h-6 w-6" />,
-      href: "/performance",
-    },
-  ];
+const dockItems = [
+  {
+    title: "Home",
+    icon: <HomeIcon className="h-6 w-6" />,
+    href: "/",
+  },
+  {
+    title: "Code",
+    icon: <Code className="h-6 w-6" />,
+    href: "/code",
+  },
+  {
+    title: "Performance Measure",
+    icon: <TrendingUp className="h-6 w-6" />,
+    href: "/performance",
+  },
+];
 
 const formSchema = z.object({
   model: z.string(),
@@ -43,15 +62,15 @@ const formSchema = z.object({
   tax: z.string(),
   mpg: z.string(),
   engineSize: z.string(),
-})
+});
 
 export default function PredictPage() {
-  const params = useParams()
-  const [prediction, setPrediction] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [currentStep, setCurrentStep] = useState<string | null>(null)
+  const params = useParams();
+  const [prediction, setPrediction] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState<string | null>(null);
 
-  const currentModel = models.find(m => m.id === params.model) || models[0]
+  const currentModel = models.find((m) => m.id === params.model) || models[0];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,69 +85,74 @@ export default function PredictPage() {
       mpg: "",
       engineSize: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setLoading(true)
-    setCurrentStep("Converting input into dataframe...")
+    setLoading(true);
+    setCurrentStep("Converting input into dataframe...");
 
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    setCurrentStep("Performing label encoding...")
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    setCurrentStep("Performing label encoding...");
 
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    setCurrentStep("Performing feature scaling...")
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    setCurrentStep("Performing feature scaling...");
 
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    setCurrentStep("Reducing dimensionality...")
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    setCurrentStep("Reducing dimensionality...");
 
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    setCurrentStep("Predicting price...")
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    setCurrentStep("Predicting price...");
 
     try {
-      const response = await fetch('/api/predict', {
-        method: 'POST',
+      const response = await fetch("/api/predict", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...values,
           modelType: params.model, // Send selected model type
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch prediction')
+        throw new Error("Failed to fetch prediction");
       }
 
-      const data = await response.json()
-      setPrediction(data.prediction)
+      const data = await response.json();
+      setPrediction(data.prediction);
     } catch (error) {
-      console.error('Error:', error)
+      console.error("Error:", error);
     } finally {
-      setLoading(false)
-      setCurrentStep(null)
+      setLoading(false);
+      setCurrentStep(null);
     }
   }
 
   function formatIndianCurrency(value: number): string {
-    const number = Math.floor(value).toString()
-    const lastThree = number.slice(-3)
-    const otherNumbers = number.slice(0, -3)
-    return otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + (otherNumbers ? "," : "") + lastThree
+    const number = Math.floor(value).toString();
+    const lastThree = number.slice(-3);
+    const otherNumbers = number.slice(0, -3);
+    return (
+      otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") +
+      (otherNumbers ? "," : "") +
+      lastThree
+    );
   }
 
   return (
     <div className="container mx-auto py-12">
       <div className="absolute top-5 right-5 transform translate-x-0 z-50">
-                          <FloatingDock items={dockItems} />
-                  </div>
+        <FloatingDock items={dockItems} />
+      </div>
       <Card className="max-w-2xl mx-auto border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <span>Price Prediction with {currentModel.name}</span>
           </CardTitle>
           <CardDescription>
-            This model has an R² score of {currentModel.metrics.r2.toFixed(2)} and RMSE of {currentModel.metrics.rmse.toFixed(2)}
+            This model has an R² score of {currentModel.metrics.r2.toFixed(2)}{" "}
+            and RMSE of {currentModel.metrics.rmse.toFixed(2)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -142,7 +166,11 @@ export default function PredictPage() {
                     <FormItem>
                       <FormLabel>Car Model</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Kuga" {...field} className="bg-background" />
+                        <Input
+                          placeholder="e.g., Kuga"
+                          {...field}
+                          className="bg-background"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -154,7 +182,10 @@ export default function PredictPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Transmission</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger className="bg-background">
                             <SelectValue placeholder="Select transmission" />
@@ -175,7 +206,10 @@ export default function PredictPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fuel Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger className="bg-background">
                             <SelectValue placeholder="Select fuel type" />
@@ -199,7 +233,11 @@ export default function PredictPage() {
                     <FormItem>
                       <FormLabel>Make</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Ford" {...field} className="bg-background" />
+                        <Input
+                          placeholder="e.g., Ford"
+                          {...field}
+                          className="bg-background"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -212,7 +250,11 @@ export default function PredictPage() {
                     <FormItem>
                       <FormLabel>Year</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 2020" {...field} className="bg-background" />
+                        <Input
+                          placeholder="e.g., 2020"
+                          {...field}
+                          className="bg-background"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -225,7 +267,11 @@ export default function PredictPage() {
                     <FormItem>
                       <FormLabel>Mileage</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 50000" {...field} className="bg-background" />
+                        <Input
+                          placeholder="e.g., 50000"
+                          {...field}
+                          className="bg-background"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -238,7 +284,11 @@ export default function PredictPage() {
                     <FormItem>
                       <FormLabel>Tax</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 150" {...field} className="bg-background" />
+                        <Input
+                          placeholder="e.g., 150"
+                          {...field}
+                          className="bg-background"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -251,7 +301,11 @@ export default function PredictPage() {
                     <FormItem>
                       <FormLabel>MPG</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 55.4" {...field} className="bg-background" />
+                        <Input
+                          placeholder="e.g., 55.4"
+                          {...field}
+                          className="bg-background"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -264,7 +318,11 @@ export default function PredictPage() {
                     <FormItem>
                       <FormLabel>Engine Size</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 2.0" {...field} className="bg-background" />
+                        <Input
+                          placeholder="e.g., 2.0"
+                          {...field}
+                          className="bg-background"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -285,20 +343,28 @@ export default function PredictPage() {
           </Form>
           {currentStep && (
             <div className="mt-6 p-6 bg-primary/5 rounded-lg border border-primary/20 max-w-lg mx-auto">
-              <h3 className="text-lg font-semibold mb-2 text-center">Current Step</h3>
+              <h3 className="text-lg font-semibold mb-2 text-center">
+                Current Step
+              </h3>
               <p className="text-center">{currentStep}</p>
             </div>
           )}
           {prediction !== null && (
             <div className="mt-6 p-6 bg-primary/5 rounded-lg border border-primary/20 max-w-lg mx-auto">
-              <h3 className="text-lg font-semibold mb-2 text-center">Predicted Price</h3>
-              <p className="text-4xl font-bold text-primary text-center">£ {Math.floor(prediction).toLocaleString()}</p>
+              <h3 className="text-lg font-semibold mb-2 text-center">
+                Predicted Price
+              </h3>
+              <p className="text-4xl font-bold text-primary text-center">
+                £ {Math.floor(prediction).toLocaleString()}
+              </p>
               <p className="text-center">OR</p>
-              <p className="text-4xl font-bold text-primary text-center">₹ {formatIndianCurrency(prediction * 106.55)}</p>
+              <p className="text-4xl font-bold text-primary text-center">
+                ₹ {formatIndianCurrency(prediction * 106.55)}
+              </p>
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

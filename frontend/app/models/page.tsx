@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { models } from "@/lib/utils";
 import { LineChart, Network, Minimize2, Trees, Gauge, Zap } from "lucide-react";
 
-import { Car, ArrowRight, Sparkles, HomeIcon, Code, Table, TrendingUp } from "lucide-react";
+import { HomeIcon, Code, TrendingUp } from "lucide-react";
 import { FloatingDock } from "@/components/ui/floating-dock";
 
 const icons = {
@@ -43,8 +43,8 @@ export default function ModelsPage() {
   return (
     <div className="container mx-auto py-12">
       <div className="absolute top-5 right-5 transform translate-x-0 z-50">
-                    <FloatingDock items={dockItems} />
-            </div>
+        <FloatingDock items={dockItems} />
+      </div>
       <div className="space-y-4 text-center mb-12">
         <h1 className="text-3xl font-bold">Choose Your Model</h1>
         <p className="text-muted-foreground">

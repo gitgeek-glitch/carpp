@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { Car, ArrowRight, Sparkles, HomeIcon, Code, Table, TrendingUp } from "lucide-react";
+import {
+  Car,
+  ArrowRight,
+  Sparkles,
+  HomeIcon,
+  Code,
+  TrendingUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FloatingDock } from "@/components/ui/floating-dock";
 
@@ -46,8 +53,9 @@ export default function Home() {
                   <span className="text-primary ml-2">Precision</span>
                 </h1>
                 <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  Leverage the power of 5 simple and 3 ensemble machine learning models to get accurate car price predictions. Make
-                  informed decisions with data-driven insights.
+                  Leverage the power of 5 simple and 3 ensemble machine learning
+                  models to get accurate car price predictions. Make informed
+                  decisions with data-driven insights.
                 </p>
               </div>
               <div className="space-x-4">
@@ -76,7 +84,8 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold">8 Different Models</h3>
                   <p className="text-muted-foreground">
-                    Choose from various ML models including Linear Regression, Random Forest, and XGBoost
+                    Choose from various ML models including Linear Regression,
+                    Random Forest, and XGBoost
                   </p>
                 </div>
               </div>
@@ -87,7 +96,8 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold">High Accuracy</h3>
                   <p className="text-muted-foreground">
-                    Our models achieve high R² scores and low RMSE values for accurate predictions
+                    Our models achieve high R² scores and low RMSE values for
+                    accurate predictions
                   </p>
                 </div>
               </div>
@@ -98,7 +108,8 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold">Easy to Use</h3>
                   <p className="text-muted-foreground">
-                    Simple interface to input car details and get instant price predictions
+                    Simple interface to input car details and get instant price
+                    predictions
                   </p>
                 </div>
               </div>

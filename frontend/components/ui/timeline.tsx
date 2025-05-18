@@ -1,14 +1,9 @@
 "use client";
-import {
-  useMotionValueEvent,
-  useScroll,
-  useTransform,
-  motion,
-} from "framer-motion";
+import { useScroll, useTransform, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 
 import { FloatingDock } from "@/components/ui/floating-dock";
-import { Car, ArrowRight, Sparkles, HomeIcon, Code, Table, TrendingUp } from "lucide-react";
+import { HomeIcon, Code, TrendingUp } from "lucide-react";
 
 interface TimelineEntry {
   title: string;
@@ -54,27 +49,23 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
   const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
 
   return (
-
-    
     <div
       className="w-full bg-white dark:bg-neutral-950 font-sans md:px-10"
       ref={containerRef}
     >
       <div className="absolute top-5 right-5 transform translate-x-0 z-50">
-                      <FloatingDock items={dockItems} />
-              </div>
+        <FloatingDock items={dockItems} />
+      </div>
       <div className="max-w-7xl mx-auto py-20 px-4 md:px-8 lg:px-10">
-      <div className="text-center mb-8">
-  <h2 className="text-lg md:text-4xl font-semibold text-neutral-700 dark:text-neutral-400 max-w-4xl mx-auto">
-    MODEL'S CODE
-  </h2>
-  <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-2">
-    Last updated: <span className="font-medium">January 5, 2025</span>
-  </p>
-</div>
-        <p className="text-neutral-700 dark:text-neutral-300 text-sm md:text-base max-w-sm">
-          
-        </p>
+        <div className="text-center mb-8">
+          <h2 className="text-lg md:text-4xl font-semibold text-neutral-700 dark:text-neutral-400 max-w-4xl mx-auto">
+            MODEL&apos;S CODE
+          </h2>
+          <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-2">
+            Last updated: <span className="font-medium">January 5, 2025</span>
+          </p>
+        </div>
+        <p className="text-neutral-700 dark:text-neutral-300 text-sm md:text-base max-w-sm"></p>
       </div>
 
       <div ref={ref} className="relative max-w-7xl mx-auto pb-20">
