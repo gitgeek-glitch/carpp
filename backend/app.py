@@ -2,8 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
 import numpy as np
-import requests
-from io import BytesIO
+import gdown
 import os
 import traceback
 from pathlib import Path
@@ -15,7 +14,7 @@ CORS(app)
 MODELS_DIR = Path(__file__).parent / 'models'
 MODELS_DIR.mkdir(exist_ok=True)
 
-# Model files and their URLs
+# Model files and their Google Drive URLs
 MODEL_FILES = {
     'scaler.joblib': os.environ.get('SCALER_URL', ''),
     'pca.joblib': os.environ.get('PCA_URL', ''),
@@ -40,35 +39,40 @@ categorical_columns = None
 feature_columns = None
 models = {}
 
+def extract_drive_id(url):
+    parts = url.split('/')
+    try:
+        return parts[5]
+    except IndexError:
+        return None
+
 def download_and_load_models():
     global scaler, pca, label_encoder, categorical_columns, feature_columns, models
-    
+
     for filename, url in MODEL_FILES.items():
         if not url:
             print(f"Warning: URL for {filename} is not set. Skipping.")
             continue
-            
+
         local_path = MODELS_DIR / filename
-        
-        # Download if file doesn't exist locally
+
         if not local_path.exists():
             try:
+                drive_id = extract_drive_id(url)
+                if not drive_id:
+                    print(f"Invalid Google Drive URL for {filename}")
+                    continue
+
                 print(f"Downloading {filename} from {url}")
-                response = requests.get(url)
-                response.raise_for_status()
-                
-                with open(local_path, 'wb') as f:
-                    f.write(response.content)
+                gdown.download(f"https://drive.google.com/uc?id={drive_id}", str(local_path), quiet=False)
                 print(f"Successfully downloaded {filename}")
             except Exception as e:
                 print(f"Error downloading {filename}: {e}")
                 continue
-        
-        # Load the model
+
         try:
             model = joblib.load(local_path)
-            
-            # Assign to appropriate variable
+
             if filename == 'scaler.joblib':
                 scaler = model
             elif filename == 'pca.joblib':
@@ -80,10 +84,9 @@ def download_and_load_models():
             elif filename == 'feature_columns.joblib':
                 feature_columns = model
             else:
-                # It's one of the prediction models
                 model_name = filename.replace('.joblib', '').replace('_', '-')
                 models[model_name] = model
-                
+
             print(f"Successfully loaded {filename}")
         except Exception as e:
             print(f"Error loading {filename}: {e}")
