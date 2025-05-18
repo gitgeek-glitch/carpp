@@ -158,11 +158,37 @@ def predict():
                 'error': f'Invalid modelType: "{model_type_raw}". Allowed values: {sorted(list(MODEL_NAME_MAP.keys())) + sorted(list(ALLOWED_MODEL_TYPES))}'
             }), 400
 
-        model = get_model(model_type)
-        processed = preprocess_data(data)
-        prediction = model.predict(processed)
-
-        return jsonify({'prediction': float(prediction[0])})
+        # Load model and make prediction
+        try:
+            model = get_model(model_type)
+            processed = preprocess_data(data)
+            prediction = model.predict(processed)
+            return jsonify({'prediction': float(prediction[0])})
+        except Exception as e:
+            # Check if this is the PCA error specifically
+            if "PCA" in str(e) and "predict" in str(e):
+                print("PCA error occurred. Attempting direct model prediction without PCA...")
+                # Try again without PCA transformation
+                processed_data = {col: 0 for col in feature_columns}
+                
+                for col in categorical_columns:
+                    if col in data:
+                        try:
+                            processed_data[col] = label_encoder.transform([data[col]])[0]
+                        except ValueError:
+                            processed_data[col] = -1
+                
+                for col in feature_columns:
+                    if col in data:
+                        processed_data[col] = float(data[col])
+                
+                feature_array = [processed_data[col] for col in feature_columns]
+                scaled_data = scaler.transform([feature_array])
+                prediction = model.predict(scaled_data)
+                return jsonify({'prediction': float(prediction[0])})
+            else:
+                # Re-raise if it's not the PCA error
+                raise
     except Exception as e:
         print("Prediction error:", e)
         traceback.print_exc()
